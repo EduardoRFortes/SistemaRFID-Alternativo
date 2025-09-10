@@ -13,6 +13,47 @@ void RFIDR200::begin() {
     // Esta função pode ser usada no futuro para outros comandos de inicialização do módulo.
 }
 
+// Função para definir os parâmetros avançados do protocolo Gen2 (Query e Session)
+// startQ: Valor Q inicial (0-15)
+// minQ: Valor Q mínimo para o algoritmo dinâmico (0-15)
+// maxQ: Valor Q máximo para o algoritmo dinâmico (0-15)
+// session: A sessão de inventário (S0, S1, S2, S3)
+bool RFIDR200::setQueryParameters(uint8_t startQ, uint8_t minQ, uint8_t maxQ, uint8_t session) {
+
+    uint8_t command[] = {
+        0xAA, 0x00, 0x0E, 0x00, 0x02, // Cabeçalho, Código do Comando, Tamanho do payload
+        0x00, // Byte para os parâmetros 1 (conterá startQ e session)
+        0x00, // Byte para os parâmetros 2 (conterá minQ e maxQ)
+        0x00, // Espaço para o checksum
+        0xDD  // Fim do comando
+    };
+
+    // Esta parte "empacota" os seus parâmetros em 2 bytes, usando operações de bits.
+    // Byte de Parâmetro 1: startQ nos 4 bits de cima, Session nos 2 bits de baixo.
+    command[5] = (startQ << 4) | (session & 0x03);
+    // Byte de Parâmetro 2: maxQ nos 4 bits de cima, minQ nos 4 bits de baixo.
+    command[6] = (maxQ << 4) | (minQ & 0x0F);
+
+    // Calcula o checksum e insere no pacote
+    command[7] = calculateChecksum(command, 8);
+    
+    // Limpa o buffer e envia o comando
+    while(serial.available()) serial.read();
+    sendCommand(command, sizeof(command));
+
+    // Espera e verifica a resposta de sucesso
+    uint8_t responseBuffer[10];
+    if (getResponse(responseBuffer, sizeof(responseBuffer))) {
+        // Verifica se a resposta corresponde ao comando enviado e se o status é sucesso (0x00)
+        if (responseBuffer[2] == 0x0E && responseBuffer[5] == 0x00) {
+            return true; // Sucesso!
+        }
+    }
+    
+    // Se não houver resposta ou se a resposta indicar erro, retorna falso.
+    return false;
+}
+
 bool RFIDR200::setTransmitPower(uint16_t power) {
     uint8_t command[] = {
         0xAA, 0x00, 0xB6, 0x00, 0x02, (uint8_t)(power >> 8), (uint8_t)(power & 0xFF), 0x00, 0xDD
