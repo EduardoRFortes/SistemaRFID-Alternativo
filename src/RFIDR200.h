@@ -23,6 +23,7 @@ public:
     void getSelectParameter(uint8_t *response, size_t length);
     void killTag(uint32_t killPassword);
     bool setQueryParameters(uint8_t startQ, uint8_t minQ, uint8_t maxQ, uint8_t session);
+    bool setDemodulatorParameters(uint8_t mixerGain, uint8_t ifGain, uint16_t threshold);
     void lockTag(uint32_t accessPassword, uint16_t lockPayload);
     void setWorkArea(uint8_t region);
     void getWorkArea(uint8_t *response, size_t length);

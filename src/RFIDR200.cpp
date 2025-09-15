@@ -153,6 +153,37 @@ void RFIDR200::writeTagData(uint32_t accessPassword, uint8_t memBank, uint16_t a
     sendCommand(command, sizeof(command));
 }
 
+
+// Função para configurar os parâmetros do recetor (sensibilidade vs. velocidade)
+bool RFIDR200::setDemodulatorParameters(uint8_t mixerGain, uint8_t ifGain, uint16_t threshold) {
+    uint8_t command[] = {
+        0xAA, 0x00, 0xF0, 0x00, 0x04, // Cabeçalho, Comando, Tamanho do Payload
+        mixerGain,                    // Parâmetro 1: Mixer Gain
+        ifGain,                       // Parâmetro 2: IF Gain
+        (uint8_t)(threshold >> 8),    // Parâmetro 3 (parte alta): Threshold MSB
+        (uint8_t)(threshold & 0xFF),  // Parâmetro 3 (parte baixa): Threshold LSB
+        0x00,                         // Espaço para o checksum
+        0xDD                          // Fim
+    };
+
+    // O checksum agora é na posição 9
+    command[9] = calculateChecksum(command, 10);
+
+    while(serial.available()) serial.read();
+    sendCommand(command, sizeof(command));
+
+    uint8_t responseBuffer[10];
+    if (getResponse(responseBuffer, sizeof(responseBuffer))) {
+        // A resposta de sucesso para o comando 0xF0 é (FrameType 0x01, Comando 0xF0, Status 0x00)
+        // Na nossa biblioteca, isto corresponde a verificar o comando (posição 2) e o status (posição 5)
+        if (responseBuffer[2] == 0xF0 && responseBuffer[5] == 0x00) {
+            return true; // Sucesso!
+        }
+    }
+    
+    return false; // Falha
+}
+
 void RFIDR200::initiateSinglePolling() {
     uint8_t command[] = {0xAA, 0x00, 0x22, 0x00, 0x00, 0x22, 0xDD};
     sendCommand(command, sizeof(command));

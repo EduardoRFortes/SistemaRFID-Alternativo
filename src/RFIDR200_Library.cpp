@@ -19,40 +19,41 @@ unsigned long lastMultiplePollMessage = millis();
 // ... includes e objetos ...
 
 void setup() {
-    Serial.begin(115200);
-    Serial.println("Iniciando leitor RFID...");
+    Serial.begin(115220);
+    Serial.println("Iniciando leitor RFID com configuração de Alta Penetração...");
 
     MySerial.begin(115200, SERIAL_8N1, 16, 17);
     rfidReader.begin();
 
-    // --- INÍCIO DA CONFIGURAÇÃO OTIMIZADA ---
+    // --- CONFIGURAÇÃO AVANÇADA E COMPLETA ---
 
-    // 1. POTÊNCIA MÁXIMA para garantir a penetração do sinal
-    Serial.println("Definindo potência de transmissão para o máximo...");
-    if (rfidReader.setTransmitPower(2700)) { // Use 2700 para 27dBm ou o máximo do seu módulo
+    // 1. POTÊNCIA MÁXIMA para alcance e penetração
+    if (rfidReader.setTransmitPower(3000)) {
         Serial.println("Potência definida com SUCESSO.");
     } else {
         Serial.println("FALHA ao definir a potência!");
     }
 
-    // 2. ALGORITMO OTIMIZADO para poucas etiquetas e leitura rápida
-    // Q Fixo e Baixo (Q=1 => 2 slots), Sessão S0 (releituras constantes)
-    uint8_t startQ = 1;
-    uint8_t minQ = 1;
-    uint8_t maxQ = 1;
-    uint8_t session = 0; // S0 -> A etiqueta responde sempre
+    // 2. MODO DE ALTA SENSIBILIDADE usando os parâmetros do manual
+    Serial.println("Definindo modo de leitura para máxima sensibilidade...");
+    uint8_t mixerGain = 0x03; // 9dB
+    uint8_t ifGain = 0x06;    // 36dB
+    uint16_t threshold = 0x01B0;
+    if (rfidReader.setDemodulatorParameters(mixerGain, ifGain, threshold)) {
+        Serial.println("Parâmetros do demodulador definidos com SUCESSO.");
+    } else {
+        Serial.println("FALHA ao definir os parâmetros do demodulador.");
+    }
 
-    Serial.println("Otimizando parâmetros para leitura rápida de poucas tags...");
-    if(rfidReader.setQueryParameters(startQ, minQ, maxQ, session)) {
+    // 3. ALGORITMO OTIMIZADO para poucas etiquetas (Q=1, Session=S0)
+    if(rfidReader.setQueryParameters(1, 1, 1, 0)) {
         Serial.println("Parâmetros de Query definidos com SUCESSO.");
     } else {
         Serial.println("FALHA ao definir os parâmetros de Query.");
     }
     
-    // --- FIM DA CONFIGURAÇÃO OTIMIZADA ---
-    
-    // 3. Iniciar a leitura
-    Serial.println("Iniciando polling múltiplo...");
+    // 4. Iniciar a leitura
+    Serial.println("\n--- Configuração concluída, iniciando leitura ---");
     rfidReader.initiateMultiplePolling(10000);
 }
 
