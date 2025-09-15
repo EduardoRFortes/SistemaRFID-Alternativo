@@ -2,6 +2,9 @@
 #include <HardwareSerial.h>
 #include "RFIDR200.h"
 
+unsigned long tempoUltimaLeitura = 0;
+const long intervaloDeLeitura = 20;
+
 // Usaremos a UART2 do ESP32. Criamos um objeto HardwareSerial para representá-la.
 HardwareSerial MySerial(2);
 
@@ -54,29 +57,33 @@ void setup() {
 }
 
 void loop() {
-    // O seu loop() não precisa de alterações.
-    // Lembre-se de remover ou usar um delay() muito baixo (ex: delay(1)) para máxima velocidade.
+    unsigned long tempoAtual = millis();
+
     uint8_t responseBuffer[256];
-   
-    if (rfidReader.getResponse(responseBuffer, 256)) {
-        if(rfidReader.hasValidTag(responseBuffer)) {
-          uint8_t rssi;
-          uint8_t epc[12];
-          rfidReader.parseTagResponse(responseBuffer, rssi, epc);
 
-          Serial.print("Tag Encontrada! -> ");
-          Serial.print("RSSI: ");
-          Serial.print(rssi, DEC);
-          Serial.print(" | ");
+    if(tempoAtual - tempoUltimaLeitura >= intervaloDeLeitura) {
 
-          Serial.print("EPC: ");
-          for (int i = 0; i < 12; ++i) {
-              if (epc[i] < 0x10) Serial.print("0");
-              Serial.print(epc[i], HEX);
-              Serial.print(" ");
-          }
-          Serial.println();
+        if (rfidReader.getResponse(responseBuffer, 256)) {
+            if(rfidReader.hasValidTag(responseBuffer)) {
+            uint8_t rssi;
+            uint8_t epc[12];
+            rfidReader.parseTagResponse(responseBuffer, rssi, epc);
+
+            Serial.print("Tag Encontrada! -> ");
+            Serial.print("RSSI: ");
+            Serial.print(rssi, DEC);
+            Serial.print(" | ");
+
+            Serial.print("EPC: ");
+            for (int i = 0; i < 12; ++i) {
+                if (epc[i] < 0x10) Serial.print("0");
+                Serial.print(epc[i], HEX);
+                Serial.print(" ");
+            }
+            Serial.println();
+            }
         }
+        tempoUltimaLeitura = tempoAtual;
     }
 }
 
