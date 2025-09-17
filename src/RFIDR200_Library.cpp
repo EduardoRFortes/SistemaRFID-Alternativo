@@ -58,33 +58,31 @@ void setup() {
 }
 
 void loop() {
-    unsigned long tempoAtual = millis();
 
     uint8_t responseBuffer[256];
 
-    if(tempoAtual - tempoUltimaLeitura >= intervaloDeLeitura) {
+    if (rfidReader.getResponse(responseBuffer, 256)) {
+        if(rfidReader.hasValidTag(responseBuffer)) {
+        uint8_t rssi;
+        uint8_t epc[12];
+        rfidReader.parseTagResponse(responseBuffer, rssi, epc);
 
-        if (rfidReader.getResponse(responseBuffer, 256)) {
-            if(rfidReader.hasValidTag(responseBuffer)) {
-            uint8_t rssi;
-            uint8_t epc[12];
-            rfidReader.parseTagResponse(responseBuffer, rssi, epc);
+        Serial.print("Tag Encontrada! -> ");
+        Serial.print("RSSI: ");
+        Serial.print(rssi, DEC);
+        Serial.print(" | ");
 
-            Serial.print("Tag Encontrada! -> ");
-            Serial.print("RSSI: ");
-            Serial.print(rssi, DEC);
-            Serial.print(" | ");
-
-            Serial.print("EPC: ");
-            for (int i = 0; i < 12; ++i) {
-                if (epc[i] < 0x10) Serial.print("0");
-                Serial.print(epc[i], HEX);
-                Serial.print(" ");
-            }
-            Serial.println();
-            }
+        Serial.print("EPC: ");
+        for (int i = 0; i < 12; ++i) {
+            if (epc[i] < 0x10) Serial.print("0");
+            Serial.print(epc[i], HEX);
+            Serial.print(" ");
         }
-        tempoUltimaLeitura = tempoAtual;
+        Serial.println();
+        }
     }
+    const int intervalo_ms = 100;
+    vTaskDelay(intervalo_ms / portTICK_PERIOD_MS);
+    
 }
 
